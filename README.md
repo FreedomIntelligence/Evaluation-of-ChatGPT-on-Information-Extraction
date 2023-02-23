@@ -2,6 +2,8 @@
 
 An Evaluation of ChatGPT on Information Extraction task, including Named Entity Recognition (NER), Relation Extraction (RE), Event Extraction (EE) and Aspect-based Sentiment Analysis (ABSA).
 
+*In progress* 
+
 ## 1. Named Entity Recognition (NER)
 
 ### DataSets
