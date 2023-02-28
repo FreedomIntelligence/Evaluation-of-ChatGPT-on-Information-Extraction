@@ -113,3 +113,30 @@ I'm going to give you a sentence and ask you to identify the entities and label 
 
 
 
+#### ABSA
+```
+Q: what does the 'aspect' term in Aspect-based Sentiment Analysis task refer to? Explain in one sentence.
+A: In Aspect-based Sentiment Analysis task, the term 'aspect' refers to a specific feature, attribute, or aspect of a product or service that a user may express an opinion about.
+
+Q: what does the 'opinion' term in Aspect-based Sentiment Analysis task refer to? Explain in one sentence.
+A: In Aspect-based Sentiment Analysis task, the term 'opinion' refers to the sentiment or attitude expressed by a user towards a particular aspect or feature of a product or service.
+
+Q: what does the 'sentiment polarity' term in Aspect-based Sentiment Analysis task refer to? Explain in one sentence.
+A: In Aspect-based Sentiment Analysis task, the term 'sentiment polarity' refers to the degree of positivity, negativity or neutrality expressed in the opinion towards a particular aspect or feature of a product or service.
+```
+
+
+According to the following definition: 
+The term 'aspect' refers to a specific feature, attribute, or aspect of a product or service that a user may express an opinion about. 
+The term 'opinion' refers to the sentiment or attitude expressed by a user towards a particular aspect or feature of a product or service.
+The term 'sentiment polarity' refers to the degree of positivity, negativity or neutrality expressed in the opinion towards a particular aspect or feature of a product or service. 
+Recognize all aspects terms with their corresponding opinion terms and sentiment polarity in the following reviews in the format of <aspect, sentiment_polarity, opinion>: 
+Boot time is super fast , around anywhere from 35 seconds to 1 minute .
+
+* Aspect Term Extraction(AE): Extracting all the aspect terms from a sentence.
+* Opinion Term Extraction (OE): Extracting all the opinion terms from a sentence.
+* Aspect-level Sentiment Classification (ALSC): Predicting the sentiment polarities for every given aspect terms in a sentence.
+* Aspect-oriented Opinion Extraction (AOE): Extracting the paired opinion terms for every given aspect terms in a sentence.
+* Aspect Term Extraction and Sentiment Classification (AESC): Extracting the aspect terms as well as the corresponding sentiment polarities simultaneously.
+* Pair Extraction (Pair): Extracting the aspect terms as well as the corresponding opinion terms simultaneously.
+* Triplet Extraction (Triplet): Extracting all aspects terms with their corresponding opinion terms and sentiment polarity simultaneously.
