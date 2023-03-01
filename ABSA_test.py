@@ -3,6 +3,7 @@ import argparse, os
 import json
 import random
 import asyncio
+import time
 
 
 def get_opts():
@@ -23,6 +24,7 @@ def bot_run(prompt, task_name):
     response = asyncio.run(bot.ask(prompt))
     asyncio.run(bot.delete_conversation())
     print("[Response]:", response)
+    time.sleep(2)
     return response
 
 # Aspect Term Extraction (AE)
@@ -39,7 +41,9 @@ def OE_task(bot, example):
 def ALSC_task(bot, example):
     res = dict()
     for asp in example["aspects"]:
-        asp_term = " ".join(asp["aspects"])
+        asp_term = " ".join(asp["term"])
+        if asp_term == "":
+            continue
         prompt = "Recognize the sentiment polarity for aspect term '{}' in the following review with the format ['aspect', 'sentiment']: {}".format(asp_term, example["raw_words"])
         res[asp_term] = bot_run(prompt, "ALSC")
     return res
@@ -48,7 +52,9 @@ def ALSC_task(bot, example):
 def AOE_task(bot, example):
     res = dict()
     for asp in example["aspects"]:
-        asp_term = " ".join(asp["aspects"])
+        asp_term = " ".join(asp["term"])
+        if asp_term == "":
+            continue
         prompt = "Recognize the opinion term for aspect term '{}' in the following review with the format ['opinion_1', 'opinion_2', ...]: {}".format(asp_term, example["raw_words"])
         res[asp_term] = bot_run(prompt, "AOE")
     return res
@@ -85,42 +91,47 @@ def absa_main(opts, bot):
     selected_idx = random.sample(index_list, opts.sample_k)
     selected_idx.sort()
 
-    result_list = []
-    print("Evaluation begining ...")
-    for idx in selected_idx:
-        example = data[idx]
-        result_dict = dict()
-        result_dict.update(example)
+    with open(os.path.join(result_dir, opts.test_file.split('.')[0] + "_result.json"), 'a', encoding='utf-8') as fw:
+        fw.seek(0)  #定位
+        fw.truncate()   #清空文件
+        print("Evaluation begining ...")
+        i = 0
+        for idx in selected_idx:
+            i += 1
+            print(i, " | ", idx)
+            example = data[idx]
+            result_dict = dict()
+            result_dict.update(example)
+            result_dict.pop("task")
+            result_dict.pop("words")
 
-        if example["task"] == "AE-OE":
-            aspects = AE_task(bot, example)
-            opinions = OE_task(bot, example)
-            aspect_sentiment = ALSC_task(bot, example)
-            pair_aspect_sentiment = AESC_task(bot, example)
-            result_dict.update({"AE": aspects})
-            result_dict.update({"OE": opinions})
-            result_dict.update({"ALSC": aspect_sentiment})
-            result_dict.update({"AESC": pair_aspect_sentiment})
+            if example["task"] == "AE-OE":
+                aspects = AE_task(bot, example)
+                opinions = OE_task(bot, example)
+                aspect_sentiment = ALSC_task(bot, example)
+                pair_aspect_sentiment = AESC_task(bot, example)
+                result_dict.update({"AE": aspects})
+                result_dict.update({"OE": opinions})
+                result_dict.update({"ALSC": aspect_sentiment})
+                result_dict.update({"AESC": pair_aspect_sentiment})
 
-        elif example["task"] == "AOE":
-            opinion_of_aspect = AOE_task(bot, example)
-            result_dict.update({"AOE": opinion_of_aspect})
+            elif example["task"] == "AOE":
+                opinion_of_aspect = AOE_task(bot, example)
+                result_dict.update({"AOE": opinion_of_aspect})
 
-        elif example["task"] == "AEOESC":
-            pair_aspect_sentiment = AESC_task(bot, example)
-            pair_aspect_opinion = Pair_task(bot, example)
-            triplet = Triplet_task(bot, example)
+            elif example["task"] == "AEOESC":
+                pair_aspect_sentiment = AESC_task(bot, example)
+                pair_aspect_opinion = Pair_task(bot, example)
+                triplet = Triplet_task(bot, example)
 
-            result_dict.update({"AESC": pair_aspect_sentiment})
-            result_dict.update({"Pair": pair_aspect_opinion})
-            result_dict.update({"Triplet": triplet})
-        else:
-            print("[Error]: unknown subtask", example["task"])
+                result_dict.update({"AESC": pair_aspect_sentiment})
+                result_dict.update({"Pair": pair_aspect_opinion})
+                result_dict.update({"Triplet": triplet})
+            else:
+                print("[Error]: unknown subtask", example["task"])
 
-        result_list.append(result_dict) 
-    
-    with open(os.path.join(result_dir, opts.test_file.split('.')[0] + "_result.json"), 'w', encoding='utf-8') as fw:
-        fw.write(json.dumps(result_list, indent=4, ensure_ascii=False))  
+            fw.write(json.dumps(result_dict, indent=4, ensure_ascii=False))  
+            fw.write("\n\n")
 
 
 if __name__ == "__main__":
