@@ -71,7 +71,7 @@ Boot time is super fast , around anywhere from 35 seconds to 1 minute .
 #### 4.1 Aspect Term Extraction(AE): Extracting all the aspect terms from a sentence.
 ```
 Recognize all aspect terms in the following review with the format ['aspect_1', 'aspect_2', ...]: 
-Great food but the service was dreadful !
+"Great food but the service was dreadful !"
 
 output: ['food', 'service']
 ```
@@ -79,7 +79,7 @@ output: ['food', 'service']
 #### 4.2 Opinion Term Extraction (OE): Extracting all the opinion terms from a sentence.
 ```
 Recognize all opinion terms in the following review with the format ['opinion_1', 'opinion_2', ...]: 
-Great food but the service was dreadful !
+"Great food but the service was dreadful !"
 
 output: ['Great', 'dreadful']
 ```
@@ -87,7 +87,7 @@ output: ['Great', 'dreadful']
 #### 4.3 Aspect-level Sentiment Classification (ALSC): Predicting the sentiment polarities for every given aspect terms in a sentence.
 ```
 Recognize the sentiment polarity for aspect term 'food' in the following review with the format ['aspect', 'sentiment']: 
-Great food but the service was dreadful !
+"Great food but the service was dreadful !"
 
 output: ['food', 'positive']
 ```
@@ -95,7 +95,7 @@ output: ['food', 'positive']
 #### 4.4 Aspect-oriented Opinion Extraction (AOE): Extracting the paired opinion terms for every given aspect terms in a sentence.
 ```
 Recognize the opinion term for aspect term 'food' in the following review with the format ['opinion_1', 'opinion_2', ...]: 
-Great food but the service was dreadful !
+"Great food but the service was dreadful !"
 
 output: ['Great']
 ```
@@ -104,7 +104,7 @@ output: ['Great']
 #### 4.5 Aspect Term Extraction and Sentiment Classification (AESC): Extracting the aspect terms as well as the corresponding sentiment polarities simultaneously.
 ```
 Recognize all aspect terms with their corresponding sentiment polarity in the following review with the format ['aspect', 'sentiment_polarity']: 
-Great food but the service was dreadful !
+"Great food but the service was dreadful !"
 
 output: ['food', 'positive'] 
         ['service', 'negative']
@@ -113,7 +113,7 @@ output: ['food', 'positive']
 #### 4.6 Pair Extraction (Pair): Extracting the aspect terms as well as the corresponding opinion terms simultaneously.
 ```
 Recognize all aspect terms with their corresponding opinion terms in the following review with the format ['aspect', 'opinion']: 
-Great food but the service was dreadful !
+"Great food but the service was dreadful !"
 
 output: ['food', 'great']
         ['service', 'dreadful']
@@ -122,7 +122,7 @@ output: ['food', 'great']
 #### 4.7 Triplet Extraction (Triplet): Extracting all aspects terms with their corresponding opinion terms and sentiment polarity simultaneously.
 ```
 Recognize all aspect terms with their corresponding opinion terms and sentiment polarity in the following review with the format ['aspect', 'sentiment', 'opinion']: 
-Great food but the service was dreadful !
+"Great food but the service was dreadful !"
 
 output: ['food', 'positive', 'great']
         ['service', 'negative', 'dreadful']

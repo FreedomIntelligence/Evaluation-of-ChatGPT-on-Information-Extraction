@@ -2,3 +2,5 @@
 /data
 /result
 /api-keys/*.txt
+/logs
+/__pycache__

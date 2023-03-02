@@ -1,4 +1,5 @@
 import json
+import os, sys
 
 def read_json(file_name):
     dict_list = []
@@ -13,6 +14,24 @@ def read_json(file_name):
                 dict_str = ""
 
     return dict_list
+
+
+class Logger(object):
+    def __init__(self, file_name = 'chatgpt_eval.log', stream = sys.stdout) -> None:
+        self.terminal = stream
+        log_dir = "./logs"
+        if not os.path.exists(log_dir):
+            os.mkdir(log_dir)
+        self.log = open(os.path.join(log_dir, file_name), "a")
+        self.flush()
+
+    def write(self, message):
+        self.terminal.write(message)
+        self.log.write(message)
+
+    def flush(self):
+        self.log.seek(0)	# 定位
+        self.log.truncate()
 
 
 if __name__ == "__main__":
