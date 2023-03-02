@@ -5,7 +5,7 @@ raw_data_dir = "./raw_data"
 output_dir = "./data"
 
 ## ABSA dataset statistics
-def absa_data_ststistics(dataset, input_file):
+def absa_data_process(dataset, input_file):
     total_num_sentence = 0
     total_num_aspect = 0
     total_num_opinion = 0
@@ -20,6 +20,7 @@ def absa_data_ststistics(dataset, input_file):
     with open(in_file_name, 'r', encoding='utf-8') as f:
         data = json.load(f)
 
+    new_data = []
     if "task" in data[0].keys() and data[0]["task"] == "AOE":  # fan
 
         sent_list = []
@@ -76,6 +77,8 @@ def absa_data_ststistics(dataset, input_file):
                 span = str(opi["from"]) + "#" + str(opi["to"])
                 if span not in opi_list:
                     opi_list.append(span)
+            example.pop("words")
+            new_data.append(example)
 
         total_num_aspect += len(asp_list)
         total_num_opinion += len(opi_list)
@@ -115,6 +118,9 @@ def absa_data_ststistics(dataset, input_file):
             if "task" not in example.keys():
                 example.update({"task": "AEOESC"})
 
+            example.pop("words")
+            new_data.append(example)
+
         total_num_sentence = len(sent_list)
         print(total_num_sentence, len(data))
 
@@ -124,8 +130,7 @@ def absa_data_ststistics(dataset, input_file):
     print("#pair    : ", total_num_pair)
     
     with open(os.path.join(output_path, input_file), 'w', encoding='utf-8') as fw:
-        fw.write(json.dumps(data, indent=4, ensure_ascii=False))       
-
+        fw.write(json.dumps(new_data, indent=4, ensure_ascii=False))       
 
 
 ## NER dataset pre-processing
@@ -345,26 +350,26 @@ def ner_nested_data_process(dataset, input_file, output_file, num_type, separato
 if __name__ == "__main__":
     ## ABSA
     # wang
-    absa_data_ststistics("absa/wang/14lap", "test_convert.json")  # 800 654 674 0
-    absa_data_ststistics("absa/wang/14res", "test_convert.json")  # 800 1134 1008 0
-    absa_data_ststistics("absa/wang/15res", "test_convert.json")  # 685 542 510 0 -> 681 541 509 0
+    absa_data_process("absa/wang/14lap", "test_convert.json")  # 800 654 674 0
+    absa_data_process("absa/wang/14res", "test_convert.json")  # 800 1134 1008 0
+    absa_data_process("absa/wang/15res", "test_convert.json")  # 685 542 510 0 -> 681 541 509 0
     # aewsome / highly recommended ! / loved it: 0 aspect 0 opinion
     # great food: 1 aspect 1 opinion
     # fan
-    absa_data_ststistics("absa/fan/14lap", "test_convert.json")  # 343 481 498 565
-    absa_data_ststistics("absa/fan/14res", "test_convert.json")  # 500 864 888 1030
-    absa_data_ststistics("absa/fan/15res", "test_convert.json")  # 325 436 469 493
-    absa_data_ststistics("absa/fan/16res", "test_convert.json")  # 329 457 486 525 -> 328 456 485 524 : Great Breakfast
+    absa_data_process("absa/fan/14lap", "test_convert.json")  # 343 481 498 565
+    absa_data_process("absa/fan/14res", "test_convert.json")  # 500 864 888 1030
+    absa_data_process("absa/fan/15res", "test_convert.json")  # 325 436 469 493
+    absa_data_process("absa/fan/16res", "test_convert.json")  # 329 457 486 525 -> 328 456 485 524 : Great Breakfast
     # penga
-    absa_data_ststistics("absa/penga/14lap", "test_convert.json")  # 339 418 490 490
-    absa_data_ststistics("absa/penga/14res", "test_convert.json")  # 496 726 862 862
-    absa_data_ststistics("absa/penga/15res", "test_convert.json")  # 318 403 455 455
-    absa_data_ststistics("absa/penga/16res", "test_convert.json")  # 320 405 465 465 -> 319 404 464 464 : Great Breakfast
+    absa_data_process("absa/penga/14lap", "test_convert.json")  # 339 418 490 490
+    absa_data_process("absa/penga/14res", "test_convert.json")  # 496 726 862 862
+    absa_data_process("absa/penga/15res", "test_convert.json")  # 318 403 455 455
+    absa_data_process("absa/penga/16res", "test_convert.json")  # 320 405 465 465 -> 319 404 464 464 : Great Breakfast
     # pengb
-    absa_data_ststistics("absa/pengb/14lap", "test_convert.json")  # 328 463 474 543
-    absa_data_ststistics("absa/pengb/14res", "test_convert.json")  # 492 848 854 994
-    absa_data_ststistics("absa/pengb/15res", "test_convert.json")  # 322 432 461 485
-    absa_data_ststistics("absa/pengb/16res", "test_convert.json")  # 326 452 475 514 -> 325 451 474 513 : Great Breakfast
+    absa_data_process("absa/pengb/14lap", "test_convert.json")  # 328 463 474 543
+    absa_data_process("absa/pengb/14res", "test_convert.json")  # 492 848 854 994
+    absa_data_process("absa/pengb/15res", "test_convert.json")  # 322 432 461 485
+    absa_data_process("absa/pengb/16res", "test_convert.json")  # 326 452 475 514 -> 325 451 474 513 : Great Breakfast
 
 
     ## NER
