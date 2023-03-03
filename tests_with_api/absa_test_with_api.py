@@ -29,12 +29,12 @@ def bot_run(prompt, task_name, logger):
 
 # Aspect Term Extraction (AE)
 def AE_task(bot, example, logger):
-    prompt = "Recognize all aspect terms from the following review in the format ['aspect_1', 'aspect_2', ...] without any explanation: \"{}\". If no term exists, then only answer '[]'.".format(example["raw_words"])
+    prompt = "Recognize all aspect terms from the following review in the format [aspect_1, aspect_2, ...] without any explanation: \"{}\". If no term exists, then only answer '[]'.".format(example["raw_words"])
     return bot_run(prompt, "AE", logger)
 
 # Opinion Term Extraction (OE)
 def OE_task(bot, example, logger):
-    prompt = "Recognize all opinion terms from the following review in the format ['opinion_1', 'opinion_2', ...] without any explanation: \"{}\". If no term exists, then only answer '[]'.".format(example["raw_words"])
+    prompt = "Recognize all opinion terms from the following review in the format [opinion_1, opinion_2, ...] without any explanation: \"{}\". If no term exists, then only answer '[]'.".format(example["raw_words"])
     return bot_run(prompt, "OE", logger)
 
 # Aspect-level Sentiment Classification (ALSC)
@@ -49,7 +49,7 @@ def ALSC_task(bot, example, logger):
         if asp_from_to in unique_asp:
             continue
         unique_asp.append(asp_from_to)
-        prompt = "Recognize the sentiment polarity for aspect term '{}' in the following review with the format ['aspect', 'sentiment'] without any explanation: \"{}\".".format(asp_term, example["raw_words"])
+        prompt = "Recognize the sentiment polarity for the aspect term '{}' in the following review in the format [aspect, sentiment] without any explanation: \"{}\".".format(asp_term, example["raw_words"])
         res[asp_term] = bot_run(prompt, "ALSC", logger)
     return res
 
@@ -65,23 +65,23 @@ def AOE_task(bot, example, logger):
         if asp_from_to in unique_asp:
             continue
         unique_asp.append(asp_from_to)
-        prompt = "Recognize the opinion term for aspect term '{}' in the following review with the format ['opinion_1', 'opinion_2', ...] without any explanation: \"{}\".".format(asp_term, example["raw_words"])
+        prompt = "Recognize the opinion term for the aspect term '{}' in the following review in the format [opinion_1, opinion_2, ...] without any explanation: \"{}\".".format(asp_term, example["raw_words"])
         res[asp_term] = bot_run(prompt, "AOE", logger)
     return res
 
 # Aspect Term Extraction and Sentiment Classification (AESC)
 def AESC_task(bot, example, logger):
-    prompt = "Recognize all aspect terms with their corresponding sentiment polarity in the following review in the format ['aspect', 'sentiment_polarity'] without any explanation: \"{}\". If no aspect term exists, then only answer '[]'.".format(example["raw_words"])
+    prompt = "Recognize all aspect terms with their corresponding sentiment polarity in the following review in the format [aspect, sentiment] without any explanation: \"{}\". If no aspect term exists, then only answer '[]'.".format(example["raw_words"])
     return bot_run(prompt, "AESC", logger)
 
 # Pair Extraction (Pair)
 def Pair_task(bot, example, logger):
-    prompt = "Recognize all aspect terms with their corresponding opinion terms in the following review in the format ['aspect', 'opinion'] without any explanation: \"{}\". If no aspect term exists, then only answer '[]'.".format(example["raw_words"])
+    prompt = "Recognize all aspect terms with their corresponding opinion terms in the following review in the format [aspect, opinion] without any explanation: \"{}\". If no aspect term exists, then only answer '[]'.".format(example["raw_words"])
     return bot_run(prompt, "Pair", logger)
 
 # Triplet Extraction (Triplet)
 def Triplet_task(bot, example, logger):
-    prompt = "Recognize all aspect terms with their corresponding opinion terms and sentiment polarity in the following review in the format ['aspect', 'sentiment', 'opinion'] without any explanation: \"{}\". If no term or sentiment exists, then only answer '[]'.".format(example["raw_words"])
+    prompt = "Recognize all aspect terms with their corresponding opinion terms and sentiment polarity in the following review in the format [aspect, sentiment, opinion] without any explanation: \"{}\". If no term or sentiment exists, then only answer '[]'.".format(example["raw_words"])
     return bot_run(prompt, "Triplet", logger)
 
 

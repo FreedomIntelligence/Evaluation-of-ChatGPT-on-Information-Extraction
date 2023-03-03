@@ -9,5 +9,8 @@ def get_opts():
     parser.add_argument('--result_dir', type=str, default="./result")
     parser.add_argument('--sample_k', type=int, default=50)
     parser.add_argument('--sample', action='store_true', default=False)
+
+    # report metric
+    parser.add_argument('report_metric_file', type=str, default="test_convert_result.json")
     opts = parser.parse_args()
     return opts
