@@ -40,10 +40,15 @@ def OE_task(bot, example, logger):
 # Aspect-level Sentiment Classification (ALSC)
 def ALSC_task(bot, example, logger):
     res = dict()
+    unique_asp = []
     for asp in example["aspects"]:
         asp_term = " ".join(asp["term"])
         if asp_term == "":
             continue
+        asp_from_to = str(asp["from"]) + "#" + str(asp["to"])
+        if asp_from_to in unique_asp:
+            continue
+        unique_asp.append(asp_from_to)
         prompt = "Recognize the sentiment polarity for aspect term '{}' in the following review with the format ['aspect', 'sentiment'] without any explanation: \"{}\".".format(asp_term, example["raw_words"])
         res[asp_term] = bot_run(prompt, "ALSC", logger)
     return res
@@ -51,10 +56,15 @@ def ALSC_task(bot, example, logger):
 # Aspect-oriented Opinion Extraction (AOE)
 def AOE_task(bot, example, logger):
     res = dict()
+    unique_asp = []
     for asp in example["aspects"]:
         asp_term = " ".join(asp["term"])
         if asp_term == "":
             continue
+        asp_from_to = str(asp["from"]) + "#" + str(asp["to"])
+        if asp_from_to in unique_asp:
+            continue
+        unique_asp.append(asp_from_to)
         prompt = "Recognize the opinion term for aspect term '{}' in the following review with the format ['opinion_1', 'opinion_2', ...] without any explanation: \"{}\".".format(asp_term, example["raw_words"])
         res[asp_term] = bot_run(prompt, "AOE", logger)
     return res
@@ -97,6 +107,7 @@ def absa_main(opts, bot, logger):
     with open(os.path.join(result_dir, opts.test_file.split('.')[0] + "_result.json"), 'a', encoding='utf-8') as fw:
         fw.seek(0)  #定位
         fw.truncate()   #清空文件
+        fw.write("[\n")
         logger.write("Evaluation begining ...\n")
         i = 0
         for idx in selected_idx:
@@ -122,18 +133,18 @@ def absa_main(opts, bot, logger):
                 result_dict.update({"AOE": opinion_of_aspect})
 
             elif example["task"] == "AEOESC":
-                # aspects = AE_task(bot, example, logger)
-                # opinions = OE_task(bot, example, logger)
-                # aspect_sentiment = ALSC_task(bot, example, logger)
-                # opinion_of_aspect = AOE_task(bot, example, logger)
+                aspects = AE_task(bot, example, logger)
+                opinions = OE_task(bot, example, logger)
+                aspect_sentiment = ALSC_task(bot, example, logger)
+                opinion_of_aspect = AOE_task(bot, example, logger)
                 pair_aspect_sentiment = AESC_task(bot, example, logger)
                 pair_aspect_opinion = Pair_task(bot, example, logger)
                 triplet = Triplet_task(bot, example, logger)
 
-                # result_dict.update({"AE": aspects})
-                # result_dict.update({"OE": opinions})
-                # result_dict.update({"ALSC": aspect_sentiment})
-                # result_dict.update({"AOE": opinion_of_aspect})
+                result_dict.update({"AE": aspects})
+                result_dict.update({"OE": opinions})
+                result_dict.update({"ALSC": aspect_sentiment})
+                result_dict.update({"AOE": opinion_of_aspect})
                 result_dict.update({"AESC": pair_aspect_sentiment})
                 result_dict.update({"Pair": pair_aspect_opinion})
                 result_dict.update({"Triplet": triplet})
@@ -141,7 +152,8 @@ def absa_main(opts, bot, logger):
                 logger.write("[Error]: unknown subtask " + example["task"] + "\n")
 
             fw.write(json.dumps(result_dict, indent=4, ensure_ascii=False))  
-            fw.write("\n\n")
+            fw.write("\n,\n")
+        fw.write("]\n")
 
 
 if __name__ == "__main__":

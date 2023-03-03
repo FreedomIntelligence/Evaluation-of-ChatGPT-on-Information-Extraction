@@ -36,9 +36,11 @@ class Logger(object):
 
 if __name__ == "__main__":
 
-    file_name = "./result/absa/wang/14lap/test_convert_result.json"
+    file_name = "./result/absa/pengb/14lap/test_convert_result.json"
     dict_list = read_json(file_name)
-    print(json.dumps(dict_list, indent=4, ensure_ascii=False))
+    with open("./result/absa/pengb/14lap/test_convert_result_dict.json", "w", encoding='utf-8')as fw:
+        fw.write(json.dumps(dict_list, indent=4, ensure_ascii=False))
+    # print(json.dumps(dict_list, indent=4, ensure_ascii=False))
 
 
 
