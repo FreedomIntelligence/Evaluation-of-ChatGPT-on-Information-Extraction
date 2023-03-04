@@ -105,11 +105,11 @@ def absa_main(opts, bot, logger):
         selected_idx = index_list
 
     with open(os.path.join(result_dir, opts.test_file.split('.')[0] + "_result.json"), 'a', encoding='utf-8') as fw:
-        # fw.seek(0)  #定位
-        # fw.truncate()   #清空文件
-        # fw.write("[\n")
+        fw.seek(0)  #定位
+        fw.truncate()   #清空文件
+        fw.write("[\n")
         logger.write("Evaluation begining ...\n")
-        i = 188
+        i = 0
         while i < len(selected_idx):
         # for idx in selected_idx:
             idx = selected_idx[i]
@@ -154,7 +154,10 @@ def absa_main(opts, bot, logger):
                 logger.write("[Error]: unknown subtask " + example["task"] + "\n")
 
             fw.write(json.dumps(result_dict, indent=4, ensure_ascii=False))  
-            fw.write("\n,\n")
+            if i != len(selected_idx):
+                fw.write("\n,\n")
+            else:
+                fw.write("\n")
         fw.write("]\n")
 
 

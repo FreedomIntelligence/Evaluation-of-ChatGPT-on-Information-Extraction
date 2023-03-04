@@ -4,8 +4,20 @@ import os
 raw_data_dir = "./raw_data"
 output_dir = "./data"
 
+polarity_mapping = {
+    "POS": "positive",
+    "NEG": "negative",
+    "NEU": "neutral"
+}
+
 ## ABSA dataset statistics
 def absa_data_process(dataset, input_file):
+
+    def get_opinion_by_index(opi_list, index):
+        for opi in opi_list:
+            if opi["index"] == index:
+                return " ".join(opi["term"])
+
     total_num_sentence = 0
     total_num_aspect = 0
     total_num_opinion = 0
@@ -86,40 +98,99 @@ def absa_data_process(dataset, input_file):
     else:  # fan, penga, pengb
         sent_list = []
         for example in data:
-            sent = example["raw_words"] 
+            new_example = dict()
+            sent = example["raw_words"]
             if sent not in sent_list:
                 sent_list.append(sent)
             else: 
                 # print(sent)
                 if "task" not in data[0].keys() or data[0]["task"] == "AEOESC" or data[0]["task"] == "AE-OE": 
                     continue  # wang, penga, pengb去重
+            new_example["raw_words"] = sent
+
+            ## asp
+            if "task" not in data[0].keys() or data[0]["task"] == "AEOESC":
+                asp_span_to_opis = dict()
+                asp_span_to_pairs = dict()
+                asp_span_to_triplets = dict()
+                asp_list = []
+                for asp in example["aspects"]:
+                    index = asp["index"]
+                    opi_word = get_opinion_by_index(example["opinions"], index)
+                    span = str(asp["from"]) + "#" + str(asp["to"])
+                    span_word = " ".join(asp["term"])
+                    cur_pair = [span_word, opi_word]
+                    polarity = polarity_mapping[asp["polarity"]]
+                    cur_triplet = [span_word, polarity, opi_word]
+                    if span not in asp_list:
+                        asp_list.append(span)
+                        asp_span_to_opis[span] = [opi_word]
+                        asp_span_to_pairs[span] = [cur_pair]
+                        asp_span_to_triplets[span] = [cur_triplet]
+                    else:
+                        asp_span_to_opis[span].append(opi_word)
+                        asp_span_to_pairs[span].append(cur_pair)
+                        asp_span_to_triplets[span].append(cur_triplet)
+
 
             asp_list = []
+            new_asp_list_processed = []
             for asp in example["aspects"]:
+                new_asp = dict()
                 if "from" not in asp.keys():
+                    new_asp_list_processed.append({"span":[], "term": []})
                     continue
                 span = str(asp["from"]) + "#" + str(asp["to"])
+                span_word = (" ".join(asp["term"]))
+                span_polarity = polarity_mapping[asp["polarity"]]
+
                 if span not in asp_list:
                     asp_list.append(span)
-            total_num_aspect += len(asp_list)
+                    new_asp["span"] = [asp["from"], asp["to"]]
+                    new_asp["term"] = span_word
+                    new_asp["polarity"] = span_polarity
+                    if "task" not in data[0].keys() or data[0]["task"] == "AEOESC":
+                        new_asp["opinions"] = asp_span_to_opis[span]
+                        new_asp["pairs"] = asp_span_to_pairs[span]
+                        new_asp["triplets"] = asp_span_to_triplets[span]
+                    new_asp_list_processed.append(new_asp)
+ 
 
-            opi_list = []
+            new_example["aspects"] = new_asp_list_processed
+            total_num_aspect += len(asp_list)
+            ## asp
+
+            ## opi
+            opi_list = []  # 去重
+            new_opi_list_processed = []
             for opi in example["opinions"]:
+                new_opi = dict()
                 if "from" not in opi.keys():
+                    new_opi_list_processed.append({"span":[], "term": []})
                     continue
-                span = str(opi["from"]) + "#" + str(opi["to"])
+                span = [opi["from"], opi["to"]]
+                span_word = (" ".join(opi["term"])).lower()
+
                 if span not in opi_list:
                     opi_list.append(span)
+                    new_opi["span"] = span
+                    new_opi["term"] = span_word
+                    new_opi_list_processed.append(new_opi)
+            
+            new_example["opinions"] = new_opi_list_processed
             total_num_opinion += len(opi_list)
+            ## opi
 
             if "task" not in data[0].keys() or data[0]["task"] == "AEOESC":
                 assert len(example["aspects"]) == len(example["opinions"])
                 total_num_pair += len(example["aspects"])
-            if "task" not in example.keys():
-                example.update({"task": "AEOESC"})
 
-            example.pop("words")
-            new_data.append(example)
+            if "task" not in example.keys():
+                new_example.update({"task": "AEOESC"})
+            else:
+                new_example["task"] = example["task"]
+
+            new_data.append(new_example)
 
         total_num_sentence = len(sent_list)
         print(total_num_sentence, len(data))
@@ -350,34 +421,34 @@ def ner_nested_data_process(dataset, input_file, output_file, num_type, separato
 if __name__ == "__main__":
     ## ABSA
     # wang
-    absa_data_process("absa/wang/14lap", "test_convert.json")  # 800 654 674 0
-    absa_data_process("absa/wang/14res", "test_convert.json")  # 800 1134 1008 0
-    absa_data_process("absa/wang/15res", "test_convert.json")  # 685 542 510 0 -> 681 541 509 0
-    # aewsome / highly recommended ! / loved it: 0 aspect 0 opinion
-    # great food: 1 aspect 1 opinion
-    # fan
-    absa_data_process("absa/fan/14lap", "test_convert.json")  # 343 481 498 565
-    absa_data_process("absa/fan/14res", "test_convert.json")  # 500 864 888 1030
-    absa_data_process("absa/fan/15res", "test_convert.json")  # 325 436 469 493
-    absa_data_process("absa/fan/16res", "test_convert.json")  # 329 457 486 525 -> 328 456 485 524 : Great Breakfast
-    # penga
-    absa_data_process("absa/penga/14lap", "test_convert.json")  # 339 418 490 490
-    absa_data_process("absa/penga/14res", "test_convert.json")  # 496 726 862 862
-    absa_data_process("absa/penga/15res", "test_convert.json")  # 318 403 455 455
-    absa_data_process("absa/penga/16res", "test_convert.json")  # 320 405 465 465 -> 319 404 464 464 : Great Breakfast
+    # absa_data_process("absa/wang/14lap", "test_convert.json")  # 800 654 674 0
+    # absa_data_process("absa/wang/14res", "test_convert.json")  # 800 1134 1008 0
+    # absa_data_process("absa/wang/15res", "test_convert.json")  # 685 542 510 0 -> 681 541 509 0
+    # # aewsome / highly recommended ! / loved it: 0 aspect 0 opinion
+    # # great food: 1 aspect 1 opinion
+    # # fan
+    # absa_data_process("absa/fan/14lap", "test_convert.json")  # 343 481 498 565
+    # absa_data_process("absa/fan/14res", "test_convert.json")  # 500 864 888 1030
+    # absa_data_process("absa/fan/15res", "test_convert.json")  # 325 436 469 493
+    # absa_data_process("absa/fan/16res", "test_convert.json")  # 329 457 486 525 -> 328 456 485 524 : Great Breakfast
+    # # penga
+    # absa_data_process("absa/penga/14lap", "test_convert.json")  # 339 418 490 490
+    # absa_data_process("absa/penga/14res", "test_convert.json")  # 496 726 862 862
+    # absa_data_process("absa/penga/15res", "test_convert.json")  # 318 403 455 455
+    # absa_data_process("absa/penga/16res", "test_convert.json")  # 320 405 465 465 -> 319 404 464 464 : Great Breakfast
     # pengb
-    absa_data_process("absa/pengb/14lap", "test_convert.json")  # 328 463 474 543
+    # absa_data_process("absa/pengb/14lap", "test_convert.json")  # 328 463 474 543
     absa_data_process("absa/pengb/14res", "test_convert.json")  # 492 848 854 994
-    absa_data_process("absa/pengb/15res", "test_convert.json")  # 322 432 461 485
-    absa_data_process("absa/pengb/16res", "test_convert.json")  # 326 452 475 514 -> 325 451 474 513 : Great Breakfast
+    # absa_data_process("absa/pengb/15res", "test_convert.json")  # 322 432 461 485
+    # absa_data_process("absa/pengb/16res", "test_convert.json")  # 326 452 475 514 -> 325 451 474 513 : Great Breakfast
 
 
     ## NER
-    ner_data_process("ner/conll03/", "conll032_test_context.json", "conll03_test.json", "conll032_types.json")
-    ner_data_process("ner/fewnerd/", "fewnerd_test_context.json", "fewnerd_test.json", "fewnerd_types.json")
-    ner_data_process("ner/zhmsra/", "zhmsra_test_context.json", "zhmsra_test.json", "zhmsra_types.json", separator="")
-    ner_data_process("ner/genia/", "genia_test_context.json", "genia_test.json", "genia_types.json")
-    ner_nested_data_process("ner/ace2004", "mrc-ner.test", "ace04_test.json", 7)
-    ner_nested_data_process("ner/ace2005", "mrc-ner.test", "ace05_test.json", 7)
+    # ner_data_process("ner/conll03/", "conll032_test_context.json", "conll03_test.json", "conll032_types.json")
+    # ner_data_process("ner/fewnerd/", "fewnerd_test_context.json", "fewnerd_test.json", "fewnerd_types.json")
+    # ner_data_process("ner/zhmsra/", "zhmsra_test_context.json", "zhmsra_test.json", "zhmsra_types.json", separator="")
+    # ner_data_process("ner/genia/", "genia_test_context.json", "genia_test.json", "genia_types.json")
+    # ner_nested_data_process("ner/ace2004", "mrc-ner.test", "ace04_test.json", 7)
+    # ner_nested_data_process("ner/ace2005", "mrc-ner.test", "ace05_test.json", 7)
     
     
