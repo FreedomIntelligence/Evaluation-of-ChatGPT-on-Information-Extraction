@@ -4,8 +4,6 @@ import random
 import time
 import openai
 import backoff
-o_path = os.getcwd()
-sys.path.append(o_path)
 from utils import Logger
 from config import get_opts
 

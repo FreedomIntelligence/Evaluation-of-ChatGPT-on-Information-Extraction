@@ -4,8 +4,6 @@ import sys
 import ast
 import difflib
 from difflib import SequenceMatcher
-o_path = os.getcwd()
-sys.path.append(o_path)
 from utils import Logger
 from config import get_opts
 
