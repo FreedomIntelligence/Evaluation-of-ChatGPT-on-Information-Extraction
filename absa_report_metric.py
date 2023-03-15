@@ -26,11 +26,65 @@ polarity_mapping = {
     "POS": "positive",
     "NEG": "negative",
     "NEU": "neutral",
-    "CON": "conflict",  # wang, 并且 14res 有三个 aspect 漏标了 polarity
 }
 
-def edit_distance(str_1, str_2):
-    return SequenceMatcher(str_1, str_2).ratio()
+
+def modify_to_target_by_edit_distance(predict_list, target_list, logger, threshold=0.5):
+    """
+    very good --> good
+    not like too much --> not like
+    """
+    if len(predict_list) == 0 or len(target_list) == 0:
+        return [], 0
+    else:
+        num_modify = 0
+        if isinstance(predict_list[0], str):
+            new_predict_list = []
+            for pred in predict_list:
+                pred = pred.strip()
+                similarity_list = [SequenceMatcher(a=pred, b=item).ratio() for item in target_list]
+                max_score = max(similarity_list)
+                if max_score > threshold:
+                    max_index = similarity_list.index(max_score)
+                    target_item = target_list[max_index].lower().strip()
+                    if target_item != pred:
+                        num_modify += 1
+                        new_predict_list.append(target_item)
+                        logger.write("'{}' -> '{}'\n".format(pred, target_item))
+                    else:
+                        new_predict_list.append(pred)
+                else:
+                    new_predict_list.append(pred)
+
+            return new_predict_list, num_modify
+        
+        elif isinstance(predict_list[0], list):
+            target_item_list = []
+            for i in range(len(target_list[0])):
+                tmp = []
+                for item in target_list:
+                    tmp.append(item[i])
+                target_item_list.append(tmp)
+
+            for pred in predict_list:
+                for i in range(len(pred)):
+                    pred_item = pred[i].strip()
+                    similarity_list = [SequenceMatcher(a=pred_item, b=item).ratio() for item in target_item_list[i]]
+                    max_score = max(similarity_list)
+                    if max_score > threshold:
+                        max_index = similarity_list.index(max_score)
+                        target_item_max_index =  target_item_list[i][max_index].lower().strip()
+                        if target_item_max_index != pred_item:
+                            num_modify += 1
+                            pred[i] = target_item_max_index
+                            logger.write("'{}' -> '{}'\n".format(pred_item, target_item_max_index))
+            return predict_list, num_modify
+                    
+        else:
+            logger.write("[ERROR]: unsupported type.\n")
+
+        
+    
 
 def print_metrics(tp, fp, fn, logger, task):
     p, r, f1 = 0.0, 0.0, 0.0
@@ -41,21 +95,22 @@ def print_metrics(tp, fp, fn, logger, task):
         r = 1.0 * tp / (tp + fn)
     if p + r != 0.0:
         f1 = 2.0 * p * r / (p + r)
-    logger.write("{} | f1: {:.4f}, p: {:.4f}, r: {:.4f} | tp: {:4d}, fp: {:4d}, fn: {:4d}\n".format(
+    logger.write("{} | p: {:.4f}, r: {:.4f}, f1: {:.4f} | tp: {:4d}, fp: {:4d}, fn: {:4d}, tp+fn: {:4d}\n".format(
         task.ljust(8),
-        round(f1, 4),
         round(p, 4),
         round(r, 4),
+        round(f1, 4),
         tp,
         fp,
         fn,
+        tp+fn,
         )
     )
 
 def response_string_to_list(response):
     """return 
         1) string 列表
-        2） list  列表
+        2) list  列表
     """
     def get_list_by_string(list_str):
         try:
@@ -171,8 +226,16 @@ def report_metric(opts, logger):
 
     with open(file_name, 'r', encoding='utf-8') as fr:
         data = json.load(fr)
-        print("#example: {}".format(len(data)))
+        # print("#example: {}".format(len(data)))
     
+    num_asp = 0
+    num_opi = 0
+    num_alsc = 0
+    num_aoe = 0
+    num_aesc = 0
+    num_pair = 0
+    num_triplet = 0
+
     keys = list(data[0].keys())
     if "AE" in keys:
         tp_ae = 0
@@ -207,17 +270,24 @@ def report_metric(opts, logger):
         # AE
         if "AE" in keys:
             asp_list = []
+            asp_span_list = []  # asp_str 有可能重复，但是 asp_span 不重复
             for asp in example["aspects"]:
                 asp_str = asp["term"]
-                if asp_str != "" and asp_str not in asp_list:
-                    asp_list.append(asp_str)
+                if asp_str != "":
+                    asp_span = str(asp["span"][0]) + "#" + str(asp["span"][1])
+                    if asp_span not in asp_span_list:
+                        asp_span_list.append(asp_span)
+                        asp_list.append(asp_str)
             # 转小写
             asp_list = [item.lower() for item in asp_list]
+            num_asp += len(asp_list)
             
             res_list = response_string_to_list(example["AE"])
             if res_list != [] and type(res_list[0]) != str:
                 res_list = []
-
+            # if opts.soft_eval:
+            #     res_list, num_modify = modify_to_target_by_edit_distance(res_list, asp_list, logger, threshold=0.5)
+                # logger.write("number of modify: {}\n".format(num_modify))
             correct_list = get_correct_list_from_response_list(asp_list, res_list)
             # print(correct_list)
             tp_ae += len(correct_list)
@@ -226,16 +296,23 @@ def report_metric(opts, logger):
         # OE    
         if "OE" in keys:
             opi_list = []
+            opi_span_list = []  # opi_str 有可能重复， 但是 opi_span 不重复
             for opi in example["opinions"]:
                 opi_str = opi["term"]
-                if opi_str != "" and opi_str not in opi_list:
-                    opi_list.append(opi_str)
+                if opi_str != "":
+                    opi_span = str(opi["span"][0]) + "#" + str(opi["span"][1])
+                    if opi_span not in opi_span_list:
+                        opi_span_list.append(opi_span)
+                        opi_list.append(opi_str)
             
             opi_list = [item.lower() for item in opi_list]
+            num_opi += len(opi_list)
             
             res_list = response_string_to_list(example["OE"])
             if res_list != [] and type(res_list[0]) != str:
                 res_list = []
+            # if opts.soft_eval:
+            #     res_list, num_modify = modify_to_target_by_edit_distance(res_list, opi_list, logger, threshold=0.5)
 
             correct_list = get_correct_list_from_response_list(opi_list, res_list)
             # print(correct_list)
@@ -245,17 +322,23 @@ def report_metric(opts, logger):
         # ALSC
         if "ALSC" in keys:
             response = example["ALSC"]
+            tar_num = len(example["aspects"])
             for asp in example["aspects"]:
                 asp_term = asp["term"]
+
                 if asp_term != "":
+                    num_alsc += 1
                     res_polarity = response[asp_term].strip().lower()
-                    if res_polarity not in polarity_mapping.values():
-                        fn_alsc += 1
+    
+                    if res_polarity == asp["polarity"]:
+                        tp_alsc += 1
+                        tar_num -= 1
                     else:
-                        if res_polarity == asp["polarity"]:
-                            tp_alsc += 1
-                        else:
-                            fp_alsc += 1
+                        fp_alsc += 1
+                else:
+                    tar_num -= 1
+            fn_alsc += tar_num
+                    
         # AOE
         if "AOE" in keys:
             response = example["AOE"]
@@ -264,6 +347,7 @@ def report_metric(opts, logger):
                 if asp_term != "":
                     target_opinions = asp["opinions"]
                     target_opinions = [item.lower() for item in target_opinions]
+                    num_aoe += len(target_opinions)
 
                     res_opinions = response_string_to_list(response[asp_term])
                     if res_opinions != [] and type(res_opinions[0]) != str:
@@ -282,6 +366,7 @@ def report_metric(opts, logger):
                 if asp_term != "":
                     target_polarity = asp["polarity"]
                     target_list.append([asp_term.lower(), target_polarity])
+            num_aesc += len(target_list)
 
             response = example["AESC"]
             res_list = []
@@ -313,6 +398,7 @@ def report_metric(opts, logger):
                     for pair in pair_list:
                         pair = [item.lower() for item in pair]
                         target_list.append(pair)
+            num_pair += len(target_list)
 
             response = example["Pair"]
             res_list = []
@@ -353,6 +439,7 @@ def report_metric(opts, logger):
                     for tri in tri_list:
                         tri = [item.lower() for item in tri]
                         target_list.append(tri)
+            num_triplet += len(target_list)
 
             response = example["Triplet"]
             res_list = []
@@ -374,6 +461,7 @@ def report_metric(opts, logger):
             fp_triplet += len(res_list) - len(correct_list)
             fn_triplet += len(target_list) - len(correct_list)
         # print()
+    logger.write("sentence: {}, asp: {}, opi: {}, alsc: {}, aoe: {}, aesc: {}, pair: {}, triplet: {}\n".format(len(data), num_asp, num_opi, num_alsc, num_aoe, num_aesc, num_pair, num_triplet))
 
     if "AE" in keys: 
         print_metrics(tp_ae, fp_ae, fn_ae, logger, "AE")
@@ -396,6 +484,24 @@ if __name__ == "__main__":
 
     logger_file = "report-metric-" + opts.task + "-" + "-".join(opts.dataset.split("/")) + ".log"
     logger = Logger(file_name=logger_file)
+    # target_opis = ["amazing", "great", "good"]
+    # predict_list = ["like", "very good", "great"]
+    # new_list, num = modify_to_target_by_edit_distance(predict_list, target_opis, logger)
+    # print(new_list, num)
+
+    # target_opis = [["food", "positive", "good"], ["support", "negative", "not like"]]
+    # predict_list = [["the food", "very positive", "very good"], ["technology support", "very negative", "not like too much"]]
+    # new_list, num = modify_to_target_by_edit_distance(predict_list, target_opis, logger)
+    # print(new_list, num)
+    
+    if "wang" in opts.dataset: 
+        # "CON": "conflict",  # wang, 并且 14res 有 4 个 aspect 漏标了 polarity
+        polarity_mapping.update(
+            {
+            "CON": "conflict"
+            }
+        )
+    print(polarity_mapping)
 
     report_metric(opts, logger)
 

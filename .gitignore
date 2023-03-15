@@ -5,3 +5,5 @@
 /logs
 /__pycache__
 /analyze_data
+/tests_with_api/__pycache__
+/.vscode
