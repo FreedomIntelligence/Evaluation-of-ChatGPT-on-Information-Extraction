@@ -1,3 +1,4 @@
+import os
 import json
 from difflib import SequenceMatcher
 from utils import Logger, print_metrics, get_correct_list_from_response_list
@@ -62,6 +63,11 @@ def report_metric(opts, logger):
     tp_ner_strict_soft_match = 0
     fp_ner_strict_soft_match = 0
     fn_ner_strict_soft_match = 0
+
+    ## nested ner
+    tp_nested = 0
+    fp_nested = 0
+    fn_nested = 0
     
     for example in data:
         ## target
@@ -179,7 +185,7 @@ if __name__ == "__main__":
     opts = get_opts()
 
     ## log file
-    opts.logger_file = "report-metric-" + opts.logger_file
+    opts.logger_file = os.path.join(opts.task, "report-metric-" + opts.logger_file)
     logger = Logger(file_name=opts.logger_file)
     # logger.write(json.dumps(opts.__dict__, indent=4) + "\n")
 

@@ -1,4 +1,4 @@
-import os, sys
+import os
 import json
 import random
 import time
@@ -15,11 +15,11 @@ from config import get_opts
 def bot_create(bot, para):
     return bot.create(**para).choices[0].message
 
-def bot_run(bot, prompt, task_name, logger):
+def bot_run(bot, prompt, task_name, logger, model="gpt-3.5-turbo-0301"):
     logger.write(task_name + "|[Prompt]: " + prompt + "\n")
     para = {
-        "model": "gpt-3.5-turbo",
-        "temperature": 0.2,
+        "model": model,
+        "temperature": 0.0,
         "messages": [
             {
                 "role": "user",
@@ -35,17 +35,17 @@ def bot_run(bot, prompt, task_name, logger):
     return response
 
 # Aspect Term Extraction (AE)
-def AE_task(bot, example, logger):
+def AE_task(opts, bot, example, logger):
     prompt = 'Recognize all aspect terms in the review "{}". Answer in the format ["aspect_1", "aspect_2", ...] without any explanation. If no aspect term exists, then only answer "[]".'.format(example["raw_words"])
-    return bot_run(bot, prompt, "AE", logger)
+    return bot_run(bot, prompt, "AE", logger, model=opts.model)
 
 # Opinion Term Extraction (OE)
-def OE_task(bot, example, logger):
+def OE_task(opts, bot, example, logger):
     prompt = 'Recognize all opinion terms in the review "{}". Answer in the format ["opinion_1", "opinion_2", ...] without any explanation. If no opinion term exists, then only answer "[]".'.format(example["raw_words"])
-    return bot_run(bot, prompt, "OE", logger)
+    return bot_run(bot, prompt, "OE", logger, model=opts.model)
 
 # Aspect-level Sentiment Classification (ALSC)
-def ALSC_task(bot, example, logger):
+def ALSC_task(opts, bot, example, logger):
     res = dict()
     for asp in example["aspects"]:
         asp_term = asp["term"]
@@ -53,10 +53,10 @@ def ALSC_task(bot, example, logger):
             continue
         
         prompt = 'Recognize the sentiment polarity for the aspect term "{}" in the review "{}". Answer from the options ["positive", "negative", "neutral"] without any explanation.'.format(asp_term, example["raw_words"])
-        res[asp_term] = bot_run(bot, prompt, "ALSC", logger)
+        res[asp_term] = bot_run(bot, prompt, "ALSC", logger, model=opts.model)
     return res
 
-def ALSC_task_for_wang(bot, example, logger):
+def ALSC_task_for_wang(opts, bot, example, logger):
     res = dict()
     for asp in example["aspects"]:
         asp_term = asp["term"]
@@ -64,34 +64,34 @@ def ALSC_task_for_wang(bot, example, logger):
             continue
         
         prompt = 'Recognize the sentiment polarity for the aspect term "{}" in the review "{}". Answer from the options ["positive", "negative", "neutral", "conflict"] without any explanation.'.format(asp_term, example["raw_words"])
-        res[asp_term] = bot_run(bot, prompt, "ALSC", logger)
+        res[asp_term] = bot_run(bot, prompt, "ALSC", logger, model=opts.model)
     return res
 
 # Aspect-oriented Opinion Extraction (AOE)
-def AOE_task(bot, example, logger):
+def AOE_task(opts, bot, example, logger):
     res = dict()
     for asp in example["aspects"]:
         asp_term = asp["term"]
         if asp_term == "":
             continue
         prompt = 'Recognize the opinion terms for the aspect term "{}" in the review "{}". Answer in the format ["opinion_1", "opinion_2", ...] without any explanation. If no opinion term exists, then only answer "[]".'.format(asp_term, example["raw_words"])
-        res[asp_term] = bot_run(bot, prompt, "AOE", logger)
+        res[asp_term] = bot_run(bot, prompt, "AOE", logger, model=opts.model)
     return res
 
 # Aspect Term Extraction and Sentiment Classification (AESC)
-def AESC_task(bot, example, logger):
+def AESC_task(opts, bot, example, logger):
     prompt = 'Recognize all aspect terms with their corresponding sentiment polarity in the review "{}". Answer in the format ["aspect", "sentiment"] without any explanation. If no aspect term exists, then only answer "[]".'.format(example["raw_words"])
-    return bot_run(bot, prompt, "AESC", logger)
+    return bot_run(bot, prompt, "AESC", logger, model=opts.model)
 
 # Pair Extraction (Pair)
-def Pair_task(bot, example, logger):
+def Pair_task(opts, bot, example, logger):
     prompt = 'Recognize all aspect terms with their corresponding opinion terms in the review "{}". Answer in the format ["aspect", "opinion"] without any explanation. If no aspect term exists, then only answer "[]".'.format(example["raw_words"])
-    return bot_run(bot, prompt, "Pair", logger)
+    return bot_run(bot, prompt, "Pair", logger, model=opts.model)
 
 # Triplet Extraction (Triplet)
-def Triplet_task(bot, example, logger):
+def Triplet_task(opts, bot, example, logger):
     prompt = 'Recognize all aspect terms with their corresponding opinion terms and sentiment polarity in the review "{}". Answer in the format ["aspect", "sentiment", "opinion"] without any explanation. If no aspect term exists, then only answer "[]".'.format(example["raw_words"])
-    return bot_run(bot, prompt, "Triplet", logger)
+    return bot_run(bot, prompt, "Triplet", logger, model=opts.model)
 
 
 def absa_main(opts, bot, logger):
@@ -110,10 +110,11 @@ def absa_main(opts, bot, logger):
         logger.write("Sampling examples ...\n")
         selected_idx = random.sample(index_list, opts.sample_k)
         selected_idx.sort()
+        print(selected_idx)
     else:
         selected_idx = index_list
 
-    with open(os.path.join(result_dir, opts.test_file.split('.')[0] + "_result.json"), 'a', encoding='utf-8') as fw:
+    with open(os.path.join(result_dir, opts.result_file), 'a', encoding='utf-8') as fw:
         fw.seek(0)  #定位
         fw.truncate()   #清空文件
         fw.write("[\n")
@@ -130,10 +131,10 @@ def absa_main(opts, bot, logger):
             result_dict.pop("task")
 
             if example["task"] == "AE-OE":
-                aspects = AE_task(bot, example, logger)
-                opinions = OE_task(bot, example, logger)
-                aspect_sentiment = ALSC_task_for_wang(bot, example, logger)
-                pair_aspect_sentiment = AESC_task(bot, example, logger)
+                aspects = AE_task(opts, bot, example, logger)
+                opinions = OE_task(opts, bot, example, logger)
+                aspect_sentiment = ALSC_task_for_wang(opts, bot, example, logger)
+                pair_aspect_sentiment = AESC_task(opts, bot, example, logger)
                 logger.write("\n")
                 result_dict.update({"AE": aspects})
                 result_dict.update({"OE": opinions})
@@ -141,18 +142,18 @@ def absa_main(opts, bot, logger):
                 result_dict.update({"AESC": pair_aspect_sentiment})
 
             elif example["task"] == "AOE":
-                opinion_of_aspect = AOE_task(bot, example, logger)
+                opinion_of_aspect = AOE_task(opts, bot, example, logger)
                 logger.write("\n")
                 result_dict.update({"AOE": opinion_of_aspect})
 
             elif example["task"] == "AEOESC":
-                aspects = AE_task(bot, example, logger)
-                opinions = OE_task(bot, example, logger)
-                aspect_sentiment = ALSC_task(bot, example, logger)
-                opinion_of_aspect = AOE_task(bot, example, logger)
-                pair_aspect_sentiment = AESC_task(bot, example, logger)
-                pair_aspect_opinion = Pair_task(bot, example, logger)
-                triplet = Triplet_task(bot, example, logger)
+                aspects = AE_task(opts, bot, example, logger)
+                opinions = OE_task(opts, bot, example, logger)
+                aspect_sentiment = ALSC_task(opts, bot, example, logger)
+                opinion_of_aspect = AOE_task(opts, bot, example, logger)
+                pair_aspect_sentiment = AESC_task(opts, bot, example, logger)
+                pair_aspect_opinion = Pair_task(opts, bot, example, logger)
+                triplet = Triplet_task(opts, bot, example, logger)
                 logger.write("\n")
 
                 result_dict.update({"AE": aspects})
@@ -178,12 +179,16 @@ def absa_main(opts, bot, logger):
 if __name__ == "__main__":
     opts = get_opts()
 
-    openai.api_key_path = "./api-keys/api-key.txt"
+    api_key_file = os.path.join("./api-keys", opts.api_key)
+    openai.api_key_path = api_key_file
 
     bot = openai.ChatCompletion()
     
     logger_file = opts.task + "-" + "-".join(opts.dataset.split("/")) + "-test.log"
     logger = Logger(file_name=logger_file)
+    logger.write(api_key_file)
+    logger.write("\n")
+    # print(api_key_file)
 
     if opts.task == "absa":
         absa_main(opts, bot, logger)

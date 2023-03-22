@@ -1,10 +1,7 @@
 import os
 import json
-import sys
-import ast
-import difflib
 from difflib import SequenceMatcher
-from utils import Logger
+from utils import Logger, response_string_to_list, get_correct_list_from_response_list, print_metrics
 from config import get_opts
 
 # 倾向于更多、更长的识别相应 term
@@ -34,8 +31,23 @@ def modify_to_target_by_edit_distance(predict_list, target_list, logger, thresho
     very good --> good
     not like too much --> not like
     """
+    ## str
+    if type(predict_list) == str:
+        if len(target_list) == 0:
+            return predict_list
+        else:
+            similarity_list = [SequenceMatcher(a=predict_list, b=item).ratio() for item in target_list]
+            max_score = max(similarity_list)
+            if max_score > threshold:
+                max_index = similarity_list.index(max_score)
+                target_item = target_list[max_index].lower().strip()
+                if target_item != predict_list and (target_item in predict_list or predict_list in target_item):
+                    return target_item
+            return predict_list
+
+    ## list  
     if len(predict_list) == 0 or len(target_list) == 0:
-        return [], 0
+        return predict_list, 0
     else:
         num_modify = 0
         if isinstance(predict_list[0], str):
@@ -47,10 +59,10 @@ def modify_to_target_by_edit_distance(predict_list, target_list, logger, thresho
                 if max_score > threshold:
                     max_index = similarity_list.index(max_score)
                     target_item = target_list[max_index].lower().strip()
-                    if target_item != pred:
+                    if target_item != pred and (target_item in pred or pred in target_item):
                         num_modify += 1
                         new_predict_list.append(target_item)
-                        logger.write("'{}' -> '{}'\n".format(pred, target_item))
+                        # logger.write("'{}' -> '{}'\n".format(pred, target_item))
                     else:
                         new_predict_list.append(pred)
                 else:
@@ -74,156 +86,20 @@ def modify_to_target_by_edit_distance(predict_list, target_list, logger, thresho
                     if max_score > threshold:
                         max_index = similarity_list.index(max_score)
                         target_item_max_index =  target_item_list[i][max_index].lower().strip()
-                        if target_item_max_index != pred_item:
+                        if target_item_max_index != pred_item and (target_item_max_index in pred_item or pred_item in target_item_max_index):
                             num_modify += 1
                             pred[i] = target_item_max_index
-                            logger.write("'{}' -> '{}'\n".format(pred_item, target_item_max_index))
+                            # logger.write("'{}' -> '{}'\n".format(pred_item, target_item_max_index))
             return predict_list, num_modify
                     
         else:
-            logger.write("[ERROR]: unsupported type.\n")
-
-        
+            logger.write("[ERROR]: unsupported type.\n")      
     
-
-def print_metrics(tp, fp, fn, logger, task):
-    p, r, f1 = 0.0, 0.0, 0.0
-
-    if tp + fp != 0:
-        p = 1.0 * tp / (tp + fp)
-    if tp + fn != 0:
-        r = 1.0 * tp / (tp + fn)
-    if p + r != 0.0:
-        f1 = 2.0 * p * r / (p + r)
-    logger.write("{} | p: {:.4f}, r: {:.4f}, f1: {:.4f} | tp: {:4d}, fp: {:4d}, fn: {:4d}, tp+fn: {:4d}\n".format(
-        task.ljust(8),
-        round(p, 4),
-        round(r, 4),
-        round(f1, 4),
-        tp,
-        fp,
-        fn,
-        tp+fn,
-        )
-    )
-
-def response_string_to_list(response):
-    """return 
-        1) string 列表
-        2) list  列表
-    """
-    def get_list_by_string(list_str):
-        try:
-            res_list = ast.literal_eval(list_str) 
-        except:
-            res_list = []
-        finally:
-            return res_list
-    
-    response = response.lower()
-    num_left = response.count("[")
-
-    res_list = []
-
-    if num_left == 0:
-        return res_list
-    
-    if num_left == 1:
-        start_idx = response.find('[')
-        response = response[start_idx:]
-        num_right = response.count("]")
-        if num_right < 1:
-            return res_list
-        else:
-            start_idx = response.find('[')
-            end_idx = response.find(']')
-            span = response[start_idx: end_idx+1]
-            res_list = get_list_by_string(span)
-            res_list = [res.strip() for res in res_list] 
-            return res_list
-
-    # "['a', 'b'], ['c', 'd']"
-    start_idx = -1
-    end_idx = -1
-
-    for i, ch in enumerate(response):
-        if ch == '[':
-            start_idx = i
-        if ch == ']':
-            end_idx = i
-        # print(start_idx, end_idx)
-        if start_idx != -1 and end_idx != -1 and end_idx > start_idx:
-            span = response[start_idx: end_idx+1]
-            tmp_list = get_list_by_string(span)
-            tmp_list = [res.strip() for res in tmp_list] 
-            res_list.append(tmp_list)
-            start_idx = -1
-            end_idx = -1
-
-    return res_list
-
-
-def has_duplicate(tmp_list):
-    """ has duplicate ?
-    """
-    if tmp_list == []:
-        return False
-    
-    if type(tmp_list[0]) == str:
-        if len(tmp_list) == len(set(tmp_list)):
-            return False
-        else:
-            return True
-        
-    if type(tmp_list[0]) == list:
-        tmp = []
-        for t in tmp_list:
-            if t not in tmp:
-                tmp.append(t)
-        if len(tmp_list) == len(tmp):
-            return False
-        else:
-            return True
-    
-def get_correct_list_from_response_list(target_list, response_list):
-    """
-    target_list 和 response_list 均有可能包含重复的 item
-    """
-        
-    res = []
-    if not has_duplicate(response_list):
-        res = [item for item in response_list if item in target_list]
-    else:
-        if not has_duplicate(target_list):
-            # 去重
-            uni_response_list = []
-            for item in response_list:
-                if item not in uni_response_list:
-                    uni_response_list.append(item)
-            res = [item for item in uni_response_list if item in target_list]
-        else:
-            res = []
-            processed_item_list = []
-            for item in response_list:
-                if item not in processed_item_list:
-                    processed_item_list.append(item)
-
-                    num_item = response_list.count(item)
-                    if num_item == 1:  # not duplicate
-                        if item in target_list:
-                            res.append(item)
-                    else:  # duplicate
-                        if item in target_list:
-                            num_item_in_target = target_list.count(item)
-                            num_item_correct = min([num_item, num_item_in_target])
-                            res += [item] * num_item_correct
-    
-    return res
-
 
 def report_metric(opts, logger):
-    file_name = os.path.join(opts.result_dir, os.path.join(opts.task, os.path.join(opts.dataset, opts.report_metric_file)))
-
+    file_name = os.path.join(opts.result_dir, os.path.join(opts.task, os.path.join(opts.dataset, opts.result_file)))
+    logger.write(file_name)
+    logger.write("\n")
     with open(file_name, 'r', encoding='utf-8') as fr:
         data = json.load(fr)
         # print("#example: {}".format(len(data)))
@@ -285,8 +161,8 @@ def report_metric(opts, logger):
             res_list = response_string_to_list(example["AE"])
             if res_list != [] and type(res_list[0]) != str:
                 res_list = []
-            # if opts.soft_eval:
-            #     res_list, num_modify = modify_to_target_by_edit_distance(res_list, asp_list, logger, threshold=0.5)
+            if opts.soft_match:
+                res_list, num_modify = modify_to_target_by_edit_distance(res_list, asp_list, logger, threshold=0.5)
                 # logger.write("number of modify: {}\n".format(num_modify))
             correct_list = get_correct_list_from_response_list(asp_list, res_list)
             # print(correct_list)
@@ -311,8 +187,8 @@ def report_metric(opts, logger):
             res_list = response_string_to_list(example["OE"])
             if res_list != [] and type(res_list[0]) != str:
                 res_list = []
-            # if opts.soft_eval:
-            #     res_list, num_modify = modify_to_target_by_edit_distance(res_list, opi_list, logger, threshold=0.5)
+            if opts.soft_match:
+                res_list, num_modify = modify_to_target_by_edit_distance(res_list, opi_list, logger, threshold=0.5)
 
             correct_list = get_correct_list_from_response_list(opi_list, res_list)
             # print(correct_list)
@@ -329,6 +205,7 @@ def report_metric(opts, logger):
                 if asp_term != "":
                     num_alsc += 1
                     res_polarity = response[asp_term].strip().lower()
+                    res_polarity = modify_to_target_by_edit_distance(res_polarity, list(polarity_mapping.values()), logger, threshold=0.5)
     
                     if res_polarity == asp["polarity"]:
                         tp_alsc += 1
@@ -352,6 +229,9 @@ def report_metric(opts, logger):
                     res_opinions = response_string_to_list(response[asp_term])
                     if res_opinions != [] and type(res_opinions[0]) != str:
                         res_opinions = []
+                    
+                    if opts.soft_match:
+                        res_opinions, num_modify = modify_to_target_by_edit_distance(res_opinions, target_opinions, logger, threshold=0.5)
                     
                     correct_list = get_correct_list_from_response_list(target_opinions, res_opinions)
                     # print(correct_list)
@@ -382,6 +262,9 @@ def report_metric(opts, logger):
                         if len(tmp) == 2:
                             res_list.append(tmp)
             # print(target_list, "###" ,res_list)
+
+            if opts.soft_match:
+                res_list, num_modify = modify_to_target_by_edit_distance(res_list, target_list, logger, threshold=0.5)
             correct_list = get_correct_list_from_response_list(target_list, res_list)
             # print(correct_list)
             tp_aesc += len(correct_list)
@@ -423,6 +306,9 @@ def report_metric(opts, logger):
                             for i in range(1, len(tmp)):
                                 res_list.append([a, tmp[i]])
 
+            if opts.soft_match:
+                res_list, num_modify = modify_to_target_by_edit_distance(res_list, target_list, logger, threshold=0.5)
+
             correct_list = get_correct_list_from_response_list(target_list, res_list)
             # print(target_list, res_list, correct_list)
             tp_pair += len(correct_list)
@@ -454,6 +340,9 @@ def report_metric(opts, logger):
                     for tmp in tmp_res_list:
                         if len(tmp) == 3:
                             res_list.append(tmp)
+            
+            if opts.soft_match:
+                res_list, num_modify = modify_to_target_by_edit_distance(res_list, target_list, logger, threshold=0.5)
 
             correct_list = get_correct_list_from_response_list(target_list, res_list)
             # print(target_list, res_list, correct_list)
@@ -484,6 +373,7 @@ if __name__ == "__main__":
 
     logger_file = "report-metric-" + opts.task + "-" + "-".join(opts.dataset.split("/")) + ".log"
     logger = Logger(file_name=logger_file)
+
     # target_opis = ["amazing", "great", "good"]
     # predict_list = ["like", "very good", "great"]
     # new_list, num = modify_to_target_by_edit_distance(predict_list, target_opis, logger)
@@ -501,8 +391,13 @@ if __name__ == "__main__":
             "CON": "conflict"
             }
         )
-    print(polarity_mapping)
+    # print(polarity_mapping)
 
+    logger.write("hard match\n")
+    report_metric(opts, logger)
+
+    opts.soft_match = True
+    logger.write("soft match\n")
     report_metric(opts, logger)
 
 

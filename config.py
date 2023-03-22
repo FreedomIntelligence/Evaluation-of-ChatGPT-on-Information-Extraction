@@ -2,6 +2,8 @@ import argparse, os
 
 def get_opts():
     parser = argparse.ArgumentParser()
+    parser.add_argument('--api_key', type=str, default="api-key.txt")
+    parser.add_argument('--model', type=str, default="gpt-3.5-turbo-0301")
     parser.add_argument('--task', type=str, default="absa")
     parser.add_argument('--input_dir', type=str, default="./data")
     parser.add_argument('--dataset', type=str, default="pengb/14lap")
@@ -12,13 +14,14 @@ def get_opts():
     parser.add_argument('--soft_match', action='store_true', default=False)  # hard-matching or soft-matching
 
     # report metric
-    parser.add_argument('--report_metric_file', type=str, default="test_convert_result.json")
+    parser.add_argument('--result_file', type=str, default="test_convert_result.json")
     opts = parser.parse_args()
     return opts
 
 
 def get_opts_ner():
     parser = argparse.ArgumentParser()
+    parser.add_argument('--api_key', type=str, default="api-key.txt")
     parser.add_argument('--model', type=str, default="gpt-3.5-turbo-0301")
     parser.add_argument('--task', type=str, default="ner")
     parser.add_argument('--input_dir', type=str, default="./data")
@@ -57,21 +60,53 @@ def get_opts_ner():
         opts.type_file = os.path.join(opts.input_dir, os.path.join(opts.task, os.path.join(opts.dataset, opts.type_file)))
         opts.test_file = os.path.join(opts.input_dir, os.path.join(opts.task, os.path.join(opts.dataset, opts.test_file)))
 
+    log_dir = os.path.join("./logs", opts.task)
+    if not os.path.exists(log_dir):
+        os.makedirs(log_dir)
+
     opts.logger_file = opts.task + "-" + opts.dataset
     if opts.coarse_grain:
         opts.logger_file += "-coarse"
     if opts.verbose_type:
         opts.logger_file += "-verbose"
-    opts.logger_file += "-test.log"
+    opts.logger_file += "-test.txt"
 
     return opts
 
 
+def get_opts_re():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--api_key', type=str, default="api-key.txt")
+    parser.add_argument('--model', type=str, default="gpt-3.5-turbo-0301")
+    parser.add_argument('--task', type=str, default="re")
+    parser.add_argument('--input_dir', type=str, default="./data")
+    parser.add_argument('--dataset', type=str, default="sent/conll04")
+    parser.add_argument('--test_file', type=str, default="test.json")
+    parser.add_argument('--type_file', type=str, default="types.json")
+    parser.add_argument('--result_dir', type=str, default="./result")
+    parser.add_argument('--sample_k', type=int, default=0)
+    parser.add_argument('--sample', action='store_true', default=False)
+    parser.add_argument('--logger_file', type=str, default="")
+    parser.add_argument('--order', action='store_true', default=False)  # 是否考虑 subject 和 object 的顺序
 
-# python tests_with_api\report_metric_absa.py --dataset pengb/14lap --report_metric_file test_convert_result.json
+    # report metric
+    parser.add_argument('--result_file', type=str, default="re_rc_test_result.json")
+    # parser.add_argument('--soft_match', action='store_true', default=False)  # # hard-matching or soft-matching
+    opts = parser.parse_args()
 
-# python tests_with_api\absa_test_with_api.py --dataset pengb/14lap --sample --sample_k 5
+    ## output dir
+    result_dir = os.path.join(opts.result_dir, os.path.join(opts.task, opts.dataset))
+    if not os.path.exists(result_dir):
+        os.makedirs(result_dir)
+    
+    log_dir = os.path.join("./logs", opts.task)
+    if not os.path.exists(log_dir):
+        os.makedirs(log_dir)
 
-# python ner_test_with_api.py --task ner --dataset conll03 --test_file ner_test.json --sample --sample_k 10
+    logger_file = "-".join(opts.dataset.split("/")) + "-" + opts.result_file.split(".")[0] + ".txt"
 
-# python ner_report_metric.py --report_metric_file ner_test_result_verbose.json --verbose_type
+    opts.result_file = os.path.join(opts.result_dir, os.path.join(opts.task, os.path.join(opts.dataset, opts.result_file)))
+    opts.type_file = os.path.join(opts.input_dir, os.path.join(opts.task, os.path.join(opts.dataset, opts.type_file)))
+    opts.test_file = os.path.join(opts.input_dir, os.path.join(opts.task, os.path.join(opts.dataset, opts.test_file)))
+
+    return opts

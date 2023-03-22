@@ -4,7 +4,7 @@ import time
 import ast
 import openai
 from utils import Logger, bot_run
-from config import get_opts_ner as get_opts
+from config import get_opts_re as get_opts
 
 
 def response_string_to_list(response):
@@ -73,9 +73,7 @@ def ner_main(opts, bot, logger):
     with open(opts.test_file, 'r', encoding='utf-8') as fr, open(opts.type_file, 'r', encoding='utf-8') as fr_type:
         data = json.load(fr)
         types = json.load(fr_type)
-        e_types = ['"' + types["entities"][item]["short"] + '"' for item in types["entities"]]
-        if opts.verbose_type:
-            e_types = ['"' + types["entities"][item]["verbose"] + '"' for item in types["entities"]]
+        r_types = list(types["relation"].values())
 
     ## sample
     index_list = list(range(0, len(data)))
@@ -102,7 +100,7 @@ def ner_main(opts, bot, logger):
             logger.write("No. "+ str(i) + " | example's id: " + str(idx) + " | total examples: " + str(len(data)) + "\n")
             example = data[idx]
 
-            prompt = 'Considering {} types of named entities including {} and {}, recognize all named entities in the given sentence. Answer in the format ["entity_type", "entity_name"] without any explanation. If no entity exists, then just answer "[]". Given sentence: "{}"'.format(len(e_types), ", ".join(e_types[:-1]), e_types[-1], example['seq'])
+            prompt = 'Considering {} types of named entities including {} and {}, recognize all named entities in the given sentence. Answer in the format ["entity_type", "entity_name"] without any explanation. If no entity exists, then just answer "[]". Given sentence: "{}"'.format(len(r_types), ", ".join(r_types[:-1]), r_types[-1], example['seq'])
 
             response = bot_run(bot, prompt, "NER", logger, model=opts.model)
             result_list = []
@@ -167,6 +165,6 @@ if __name__ == "__main__":
     logger = Logger(file_name=logger_file)
     logger.write(json.dumps(opts.__dict__, indent=4) + "\n")
 
-    if opts.task == "ner":
+    if opts.task == "re":
         ner_main(opts, bot, logger)
 

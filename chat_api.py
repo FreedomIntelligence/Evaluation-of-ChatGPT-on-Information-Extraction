@@ -1,5 +1,6 @@
 import openai
 import ast
+import json
 
 def response_string_to_list(response):
     def get_list_by_string(list_str):
@@ -79,6 +80,34 @@ prompt = 'Recognize the sentiment polarity for the aspect term "{}" in the revie
 # prompt = 'Recognize all aspect terms with their corresponding opinion terms in the review "{}". Answer in the format [aspect, opinion] without any explanation. If no aspect term exists, then only answer "[]".'.format(sentence)
 
 # prompt = 'Recognize all aspect terms with their corresponding opinion terms and sentiment polarity in the review "{}". Answer in the format [aspect, sentiment, opinion] without any explanation. If no aspect term exists, then only answer "[]".'.format(sentence)
+
+ent_list = ["Organization", "Location", "Person", "Other"]
+rel_list = ["Organization Based In", "Located In", "Live In", "Work For", "Kill", "No relation"]
+seq = "An art exhibit at the Hakawati Theatre in Arab east Jerusalem was a series of portraits of Palestinians killed in the rebellion ."
+ent_list = ["Hakawati Theatre", "Jerusalem"]
+pair_str = ""
+for subj in ent_list:
+    for obj in ent_list:
+        if subj != obj:
+            pair_str += '("{}","{}")\n'.format(subj, obj) 
+    
+
+# prompt = 'Given the text "{}", from the list of relations: {}, identify all relations for each of the following subject-object entity pairs of the form ("subject", "object"): \n {}. Answer in the form "("subject", "object"): ["relation_1", "relation_2", ...].'.format(seq, json.dumps(rel_list), pair_str)
+
+
+
+
+prompt = 'Given the list of entity types {}. From the list of relations {}, identify all relations expressed by the given text with their corresponding subject and object entities. Answer in the triplet format ["subject", "relation", "object]. If no triplet exists, then only answer "[]". Given text "{}"'.format(ent_list, rel_list, seq)
+
+prompt = 'According to the text "{}", from the list of relations: {}, identify all relations for each of the following subject-object entity pairs of the form ("subject","object"). Answer in the format "("subject","object"):["relation_1","relation_2",...].\n {}'.format(seq, json.dumps(rel_list), pair_str)
+
+# prompt = 'According to the text "{}", from the list of relations: {}, identify all relations between subject entity "{}" and object entity "{}", identify all relations between subject entity "{}" and object entity "{}". Answer in the format "("subject", "object"): ["relation_1", "relation_2", ...].\n '.format(seq, json.dumps(rel_list), ent_list[0], ent_list[1], ent_list[1], ent_list[0])
+
+
+print(prompt)
+
+
+
 
 para = {
         "model": "gpt-3.5-turbo",
