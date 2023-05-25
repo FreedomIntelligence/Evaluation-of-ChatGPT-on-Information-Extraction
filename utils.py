@@ -3,20 +3,56 @@ import os, sys
 import openai
 import backoff
 import ast
+import threading
 
-def read_json(file_name):
-    dict_list = []
-    with open(file_name) as f:
-        dict_str = ""
-        for line in f:
-            if line.strip() != "":
-                dict_str += line.strip()
+
+## multi thread start
+## Read One Sample
+class ReadSample(object):
+    """read one sample from the data list """
+    def __init__(self, data_list, data_idx_list, start_line=0):
+        self.data = data_list
+        self.data_idx = data_idx_list
+        self.num_data = len(self.data_idx)
+        self.lock = threading.RLock()  # 同步锁
+        self.cur_index = start_line  # 当前读取位置
+ 
+    def get_item(self):
+        self.lock.acquire()
+        try:
+            if self.cur_index < self.num_data:
+                sample = self.data[self.data_idx[self.cur_index]]
+                self.cur_index += 1
+                return True, sample
             else:
-                cur_dict = json.loads(dict_str)
-                dict_list.append(cur_dict)
-                dict_str = ""
+                return False, None
+            
+        except Exception as e:
+            return False, "error:" + e.args
+        finally:
+            self.lock.release()
 
-    return dict_list
+## Write One Sample
+class WriteSample(object): 
+    def __init__(self, file_name, mode):
+        self.file_name = file_name
+        self.mode = mode
+        self.lock = threading.RLock()
+        self.clear()
+
+    def clear(self):
+        with open(self.file_name, 'a', encoding='utf-8') as fw:
+            fw.seek(0)  #定位
+            fw.truncate()   #清空文件
+ 
+    def write(self, sample):
+        self.lock.acquire()
+        with open(self.file_name, self.mode, encoding='utf-8') as f:
+            f.write(json.dumps(sample, ensure_ascii=False) + '\n')
+        self.lock.release()
+
+## multi thread end
+
 
 ## Logger
 class Logger(object):
@@ -36,16 +72,17 @@ class Logger(object):
         self.log.seek(0)	# 定位
         self.log.truncate()
 
+
 ## connect OpenAI API
 @backoff.on_exception(backoff.expo, \
                       (openai.error.RateLimitError, 
                        openai.error.APIConnectionError, 
-                       openai.error.APIError))
+                       openai.error.APIError,
+                       openai.error.ServiceUnavailableError))
 def bot_create(bot, para):
     return bot.create(**para).choices[0].message
 
-def bot_run(bot, prompt, task_name, logger, model="gpt-3.5-turbo"):
-    logger.write(task_name + "|[Prompt]: " + prompt + "\n")
+def bot_run(bot, prompt, model="gpt-3.5-turbo-0301"):
     para = {
         "model": model,
         "temperature": 0.0,
@@ -56,12 +93,11 @@ def bot_run(bot, prompt, task_name, logger, model="gpt-3.5-turbo"):
             }
         ]
     }
-    # response = bot.create(**para).choices[0].message
     response = bot_create(bot, para)
     response = response["content"].strip().strip("\n")
-    logger.write("#Response#: " + response + "\n")
-    # time.sleep(1)
+
     return response
+
 
 ## Eval
 def response_string_to_list(response):
@@ -69,40 +105,48 @@ def response_string_to_list(response):
         1) string 列表
         2) list  列表
     """
-    def get_list_by_string(list_str):
+    def get_list_by_string(list_str, ori_response):
         try:
             res_list = ast.literal_eval(list_str) 
+            flag = True
         except:
             res_list = []
+            flag = False
+            # print(ori_response)
         finally:
-            return res_list
+            return res_list, flag
     
+    ori_response = response
+    response = response.replace("(", "[").replace(")", "]")
     response = response.lower()
     num_left = response.count("[")
 
     res_list = []
 
     if num_left == 0:
-        return res_list
+        # print(ori_response)
+        return res_list, False
     
     if num_left == 1:
         start_idx = response.find('[')
         response = response[start_idx:]
         num_right = response.count("]")
         if num_right < 1:
-            return res_list
+            # print(ori_response)
+            return res_list, False
         else:
             start_idx = response.find('[')
             end_idx = response.find(']')
             span = response[start_idx: end_idx+1]
-            res_list = get_list_by_string(span)
+            res_list, flag = get_list_by_string(span, ori_response)
             res_list = [res.strip() for res in res_list] 
-            return res_list
+            return res_list, flag
 
     # "['a', 'b'], ['c', 'd']"
     start_idx = -1
     end_idx = -1
 
+    res_flag = True
     for i, ch in enumerate(response):
         if ch == '[':
             start_idx = i
@@ -111,13 +155,21 @@ def response_string_to_list(response):
         # print(start_idx, end_idx)
         if start_idx != -1 and end_idx != -1 and end_idx > start_idx:
             span = response[start_idx: end_idx+1]
-            tmp_list = get_list_by_string(span)
-            tmp_list = [res.strip() for res in tmp_list] 
+            # print(span)
+            tmp_list, flag = get_list_by_string(span, ori_response)
+            if not flag:
+                res_flag = False
+                # print(response)
+            tmp_list = [str(res).strip() for res in tmp_list] 
             res_list.append(tmp_list)
             start_idx = -1
             end_idx = -1
+        elif  start_idx != -1 and end_idx != -1 and start_idx > end_idx:
+            res_flag = False
+            # print(response)
 
-    return res_list
+
+    return res_list, res_flag
 
 
 def has_duplicate(tmp_list):
@@ -177,6 +229,19 @@ def get_correct_list_from_response_list(target_list, response_list):
     
     return res
 
+        
+def get_f1(tp, fp, fn):
+    p, r, f1 = 0.0, 0.0, 0.0
+
+    if tp + fp != 0:
+        p = 1.0 * tp / (tp + fp)
+    if tp + fn != 0:
+        r = 1.0 * tp / (tp + fn)
+    if p + r != 0.0:
+        f1 = 2.0 * p * r / (p + r)
+    return f1
+
+
 def print_metrics(tp, fp, fn, logger, task, align=8):
     p, r, f1 = 0.0, 0.0, 0.0
 
@@ -186,6 +251,7 @@ def print_metrics(tp, fp, fn, logger, task, align=8):
         r = 1.0 * tp / (tp + fn)
     if p + r != 0.0:
         f1 = 2.0 * p * r / (p + r)
+        
     logger.write("{} | p: {:.4f}, r: {:.4f}, f1: {:.4f} | tp: {:4d}, fp: {:4d}, fn: {:4d}, tp+fn: {:4d}\n".format(
         task.ljust(align),
         round(p, 4),
@@ -197,7 +263,22 @@ def print_metrics(tp, fp, fn, logger, task, align=8):
         tp+fn,
         )
     )
+    return f1
 
+
+def read_json(file_name):
+    dict_list = []
+    with open(file_name) as f:
+        dict_str = ""
+        for line in f:
+            if line.strip() != "":
+                dict_str += line.strip()
+            else:
+                cur_dict = json.loads(dict_str)
+                dict_list.append(cur_dict)
+                dict_str = ""
+
+    return dict_list
 
 
 if __name__ == "__main__":
