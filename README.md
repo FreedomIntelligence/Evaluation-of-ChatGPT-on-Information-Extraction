@@ -26,7 +26,7 @@ bash ./scripts/ee/eval_trigger.sh
 bash ./scripts/ee/eval_argument.sh
 bash ./scripts/ee/eval_joint.sh
 ```
-Before testing, you nedd to modify all ``--api_key`` and ``--result_file`` arguments in all ``*.sh `` scripts.
+Before testing, you need to modify all ``--api_key`` and ``--result_file`` arguments in all ``*.sh `` scripts.
 
 
 ## Get Evaluation Metrics
