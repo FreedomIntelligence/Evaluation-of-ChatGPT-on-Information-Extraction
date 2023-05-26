@@ -193,7 +193,8 @@ def has_duplicate(tmp_list):
             return False
         else:
             return True
-    
+
+
 def get_correct_list_from_response_list(target_list, response_list):
     """
     target_list 和 response_list 均有可能包含重复的 item
@@ -229,18 +230,6 @@ def get_correct_list_from_response_list(target_list, response_list):
     
     return res
 
-        
-def get_f1(tp, fp, fn):
-    p, r, f1 = 0.0, 0.0, 0.0
-
-    if tp + fp != 0:
-        p = 1.0 * tp / (tp + fp)
-    if tp + fn != 0:
-        r = 1.0 * tp / (tp + fn)
-    if p + r != 0.0:
-        f1 = 2.0 * p * r / (p + r)
-    return f1
-
 
 def print_metrics(tp, fp, fn, logger, task, align=8):
     p, r, f1 = 0.0, 0.0, 0.0
@@ -264,33 +253,5 @@ def print_metrics(tp, fp, fn, logger, task, align=8):
         )
     )
     return f1
-
-
-def read_json(file_name):
-    dict_list = []
-    with open(file_name) as f:
-        dict_str = ""
-        for line in f:
-            if line.strip() != "":
-                dict_str += line.strip()
-            else:
-                cur_dict = json.loads(dict_str)
-                dict_list.append(cur_dict)
-                dict_str = ""
-
-    return dict_list
-
-
-if __name__ == "__main__":
-
-    file_name = "./result/absa/pengb/14lap/test_convert_result.json"
-    dict_list = read_json(file_name)
-    with open("./result/absa/pengb/14lap/test_convert_result_dict.json", "w", encoding='utf-8')as fw:
-        fw.write(json.dumps(dict_list, indent=4, ensure_ascii=False))
-    # print(json.dumps(dict_list, indent=4, ensure_ascii=False))
-
-
-
-
 
     

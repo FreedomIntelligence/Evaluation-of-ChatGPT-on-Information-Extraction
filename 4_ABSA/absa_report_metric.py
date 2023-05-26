@@ -477,7 +477,10 @@ def report_metric_by_key(opts, key, result_file, logger, dump_to_file=False):
     logger.write("sentence: {}, asp: {}, opi: {}, alsc: {}, aoe: {}, aesc: {}, pair: {}, triplet: {}\n".format(len(data), num_asp, num_opi, num_alsc, num_aoe, num_aesc, num_pair, num_triplet))
 
     if dump_to_file:
-        dump_metric_file = os.path.join(os.path.join(opts.result_dir, opts.task), "metric-" + "-".join(opts.dataset.split("/")) + ".json")
+        if opts.irrelevant:
+            dump_metric_file = os.path.join(os.path.join(opts.result_dir, opts.task), "irrelevant-metric-" + "-".join(opts.dataset.split("/")) + ".json")
+        else:
+            dump_metric_file = os.path.join(os.path.join(opts.result_dir, opts.task), "metric-" + "-".join(opts.dataset.split("/")) + ".json")
         fw = open(dump_metric_file, "a", encoding="utf-8")
 
     print(num_invalid)
@@ -527,12 +530,24 @@ def report_metric_by_key(opts, key, result_file, logger, dump_to_file=False):
 
 def get_metric(opts, logger):
 
-    task_list = ["AE", "OE", "ALSC", "AOE", "AESC", "Pair", "Triplet"] # 
-    
-    if "wang" in opts.dataset:
-        task_list = ["AE", "OE", "ALSC_wang", "AESC_wang"]  # 
-    if "fan" in opts.dataset: 
-        task_list = ["AOE"]
+    if opts.irrelevant:
+        if "wang" in opts.dataset:
+            task_list = ["AE", "OE", "ALSC_wang"]  # 
+        if "fan" in opts.dataset: 
+            task_list = ["AOE"]
+        if "penga" in opts.dataset: 
+            task_list = ["AESC", "Pair"]
+        if "pengb" in opts.dataset: 
+            task_list = ["Triplet"]
+
+    else:
+
+        task_list = ["AE", "OE", "ALSC", "AOE", "AESC", "Pair", "Triplet"] # 
+        
+        if "wang" in opts.dataset:
+            task_list = ["AE", "OE", "ALSC_wang", "AESC_wang"]  # 
+        if "fan" in opts.dataset: 
+            task_list = ["AOE"]
 
     for task in task_list:
         file_name = task + "-" + opts.result_file

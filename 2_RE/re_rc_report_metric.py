@@ -438,7 +438,10 @@ def re_rc_report_metric(opts, logger, file_name=None, dump_to_file=False):
     print(num_entities, num_entity_changed, num_entities-num_entity_changed)
 
     if dump_to_file:
-        dump_metric_file = os.path.join(opts.result_dir, opts.task, "re-rc-metric-" + "-".join(opts.dataset.split("/")) + ".json")
+        if opts.irrelevant:
+            dump_metric_file = os.path.join(opts.result_dir, opts.task, "irrelevant-re-rc-metric-" + "-".join(opts.dataset.split("/")) + ".json")
+        else:
+            dump_metric_file = os.path.join(opts.result_dir, opts.task, "re-rc-metric-" + "-".join(opts.dataset.split("/")) + ".json")
         fw = open(dump_metric_file, "a", encoding="utf-8")
 
     # f1_order = print_metrics(tp_all_order, fp_all_order, fn_all_order, logger, "order", align=8)

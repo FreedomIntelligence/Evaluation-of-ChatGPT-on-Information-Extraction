@@ -309,7 +309,10 @@ def report_metric(opts, logger):
     print(num_invalid) 
     logger.write("#sentence: {}, #entity: {}, #undefined type: {}\n".format(len(data), num_entity, num_undefined_type))
 
-    dump_metric_file = os.path.join(os.path.join(opts.result_dir, opts.task), opts.metric_file)
+    if not opts.irrelevant:
+        dump_metric_file = os.path.join(os.path.join(opts.result_dir, opts.task), opts.metric_file)
+    else:
+        dump_metric_file = os.path.join(os.path.join(opts.result_dir, opts.task), "irrelevant-" + opts.metric_file)
     fw = open(dump_metric_file, "a", encoding="utf-8")
 
     print_metrics(tp_ner_strict, fp_ner_strict, fn_ner_strict, logger, "NER-strict-hardMatch", align=25)

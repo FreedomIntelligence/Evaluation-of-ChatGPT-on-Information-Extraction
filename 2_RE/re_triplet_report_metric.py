@@ -190,7 +190,10 @@ def triplet_report_metric(opts, logger, file_name=None, dump_to_file=False):
     logger.write("#sentence: {}, #undefined relation type: {}\n".format(len(data),  num_undefined_type))
     
     if dump_to_file:
-        dump_metric_file = os.path.join(opts.result_dir, opts.task, "triplet-metric-" + "-".join(opts.dataset.split("/")) + ".json")
+        if opts.irrelevant:
+            dump_metric_file = os.path.join(opts.result_dir, opts.task, "irrelevant-triplet-metric-" + "-".join(opts.dataset.split("/")) + ".json")
+        else:
+            dump_metric_file = os.path.join(opts.result_dir, opts.task, "triplet-metric-" + "-".join(opts.dataset.split("/")) + ".json")
         fw = open(dump_metric_file, "a", encoding="utf-8")
 
     print(num_invalid)

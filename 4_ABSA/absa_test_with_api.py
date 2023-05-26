@@ -231,12 +231,24 @@ def absa_main(opts, bot, logger):
         selected_idx = index_list
 
     first_example = data[selected_idx[0]]
-    if first_example["task"] == "AE-OE":
-        task_list = ["AE", "OE", "ALSC_wang", "AESC_wang"]  
-    elif first_example["task"] == "AOE":
-        task_list = ["AOE"]
-    elif first_example["task"] == "AEOESC":
-        task_list = ["AE", "OE", "ALSC", "AOE", "AESC", "Pair", "Triplet"] # 
+    if opts.irrelevant:
+        if first_example["task"] == "AE-OE":
+            task_list = ["AE", "OE", "ALSC_wang"]  
+        elif first_example["task"] == "AOE":
+            task_list = ["AOE"]
+        elif first_example["task"] == "AEOESC":
+            if "pengb" in opts.dataset:
+                task_list = ["Triplet"] #
+            else:
+                task_list = ["AESC", "Pair"] #
+    else:
+
+        if first_example["task"] == "AE-OE":
+            task_list = ["AE", "OE", "ALSC_wang", "AESC_wang"]  
+        elif first_example["task"] == "AOE":
+            task_list = ["AOE"]
+        elif first_example["task"] == "AEOESC":
+            task_list = ["AE", "OE", "ALSC", "AOE", "AESC", "Pair", "Triplet"] # 
 
     for task in task_list:
         if opts.ICL or opts.COT:

@@ -7,6 +7,7 @@ def get_opts_ner():
     parser.add_argument('--task', type=str, default="ner")
     parser.add_argument('--input_dir', type=str, default="./data")
     parser.add_argument('--dataset', type=str, default="conll03")
+    parser.add_argument('--train_file', type=str, default="ner_train.json")
     parser.add_argument('--test_file', type=str, default="ner_test.json")
     parser.add_argument('--type_file', type=str, default="types.json")
     parser.add_argument('--result_dir', type=str, default="./result")
@@ -22,6 +23,7 @@ def get_opts_ner():
     parser.add_argument('--cot_prompt', type=str, default="prompt_cot.json")
     parser.add_argument('--best_prompt', type=int, default=1)
     parser.add_argument('--irrelevant', action='store_true', default=False)
+    parser.add_argument('--threshold_head_tail', type=int, default=1000)
 
     # report metric
     parser.add_argument('--result_file', type=str, default="ner_test_result.json")

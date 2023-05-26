@@ -8,6 +8,7 @@ def get_opts_re():
     parser.add_argument('--task', type=str, default="re")
     parser.add_argument('--input_dir', type=str, default="./data")
     parser.add_argument('--dataset', type=str, default="sent/conll04")
+    parser.add_argument('--train_file', type=str, default="train.json")
     parser.add_argument('--test_file', type=str, default="test.json")
     parser.add_argument('--type_file', type=str, default="types.json")
     parser.add_argument('--result_dir', type=str, default="./result")
@@ -15,6 +16,7 @@ def get_opts_re():
     parser.add_argument('--sample', action='store_true', default=False)
     parser.add_argument('--logger_file', type=str, default="")
     parser.add_argument('--order', action='store_true', default=False)  # 是否考虑 subject 和 object 的顺序
+    parser.add_argument('--threshold_head_tail', type=int, default=500)
 
     parser.add_argument('--ICL', action='store_true', default=False)
     parser.add_argument('--COT', action='store_true', default=False)

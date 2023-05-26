@@ -176,7 +176,10 @@ def trigger_report_metric(opts, logger, file_name=None, dump_to_file=False):
     # print(num_invalid)
 
     if dump_to_file:
-        dump_metric_file = os.path.join(opts.result_dir, opts.task, "trigger-metric-" + "-".join(opts.dataset.split("/")) + ".json")
+        if opts.irrelevant:
+            dump_metric_file = os.path.join(opts.result_dir, opts.task, "irrelevant-trigger-metric-" + "-".join(opts.dataset.split("/")) + ".json")
+        else:
+            dump_metric_file = os.path.join(opts.result_dir, opts.task, "trigger-metric-" + "-".join(opts.dataset.split("/")) + ".json")
         fw = open(dump_metric_file, "a", encoding="utf-8")
 
     f1_strict = print_metrics(tp_strict, fp_strict, fn_strict, logger, "strict", align=6)
@@ -258,7 +261,7 @@ def trigger_report_metric_head_tail(opts, logger, file_name=None):
         fn_tail += len(tail_target) - len(tail_correct)
         
     f1_head = print_metrics(tp_head, fp_head, fn_head, logger, "head", align=6)
-    f1_tail = print_metrics(tp_tail, fp_tail, fn_tail, logger, "soft", align=6)
+    f1_tail = print_metrics(tp_tail, fp_tail, fn_tail, logger, "tail", align=6)
 
 
 if __name__ == "__main__":
