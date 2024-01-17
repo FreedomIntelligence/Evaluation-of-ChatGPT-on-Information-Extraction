@@ -53,3 +53,25 @@ By default, the metrics are calculated based on our output result files at [Goog
 ## Future Work
 
 We will add the results and analysis of GPT-4.
+
+## Citation
+
+```angular2
+@article{han2023-chatgpt-IE-evaluation,
+  author       = {Ridong Han and
+                  Tao Peng and
+                  Chaohao Yang and
+                  Benyou Wang and
+                  Lu Liu and
+                  Xiang Wan},
+  title        = {Is Information Extraction Solved by ChatGPT? An Analysis of Performance,
+                  Evaluation Criteria, Robustness and Errors},
+  journal      = {CoRR},
+  volume       = {abs/2305.14450},
+  year         = {2023},
+  eprinttype   = {arXiv},
+  eprint       = {2305.14450},
+  url          = {https://doi.org/10.48550/arXiv.2305.14450},
+  doi          = {10.48550/ARXIV.2305.14450},
+}
+```
