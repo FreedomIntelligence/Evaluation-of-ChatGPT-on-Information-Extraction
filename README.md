@@ -64,8 +64,7 @@ We will add the results and analysis of GPT-4.
                   Benyou Wang and
                   Lu Liu and
                   Xiang Wan},
-  title        = {Is Information Extraction Solved by ChatGPT? An Analysis of Performance,
-                  Evaluation Criteria, Robustness and Errors},
+  title        = {Is Information Extraction Solved by ChatGPT? An Analysis of Performance, Evaluation Criteria, Robustness and Errors},
   journal      = {CoRR},
   volume       = {abs/2305.14450},
   year         = {2023},
